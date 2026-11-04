@@ -20,6 +20,36 @@ jobs:
           unzip -o AeroDrive_1280x720_Build_Ready.zip -d /tmp/aerodrive-src
           rsync -a --exclude='.github/' /tmp/aerodrive-src/ ./
 
+      - name: Configure Java and Kotlin targets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("app/build.gradle")
+          s = p.read_text()
+
+          needle = "    compileSdk 35\n"
+
+          replacement = needle + """
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+          """
+
+          if "kotlinOptions" not in s:
+              if needle not in s:
+                  raise SystemExit("Could not find compileSdk 35")
+              s = s.replace(needle, replacement, 1)
+
+          p.write_text(s)
+          print("Java and Kotlin targets configured to 17")
+          PY
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
